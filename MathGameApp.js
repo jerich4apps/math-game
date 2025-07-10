@@ -22,6 +22,7 @@ export default function MathGameApp() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [showLineA, setShowLineA] = useState(true);
 
   useEffect(() => {
     if (theme) {
@@ -43,7 +44,10 @@ export default function MathGameApp() {
   }, [users]);
 
   function generateProblem(gradeLevel = "4", difficultyLevel = "easy") {
-    // ...same as before...
+    const a = Math.floor(Math.random() * 10 + 1);
+    const b = Math.floor(Math.random() * 10 + 1);
+    const correctAnswer = a + b;
+    return { question: `${a} + ${b}`, correctAnswer, hint: `Try counting on from ${a}` };
   }
 
   function startQuiz() {
@@ -152,7 +156,26 @@ export default function MathGameApp() {
       <main className="main-content">
         <section className="game-panel">
           {activeUser ? (
-            // ...game section...
+            <div className="game-section">
+              {!quizFinished ? (
+                <>
+                  <p><strong>Question:</strong> {problem?.question}</p>
+                  <input
+                    type="text"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Enter your answer"
+                  />
+                  <button onClick={handleSubmitAnswer}>Submit</button>
+                  <button onClick={() => setShowHint(true)}>Hint</button>
+                  <button onClick={startQuiz}>Start Quiz</button>
+                  {showHint && <p className="hint">Hint: {problem?.hint}</p>}
+                  <p className="feedback">{feedback}</p>
+                </>
+              ) : (
+                <p className="final-score">You scored {score} out of 10!</p>
+              )}
+            </div>
           ) : (
             <section className="login-panel">
               <input placeholder="Enter your name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
@@ -188,7 +211,25 @@ export default function MathGameApp() {
         </section>
 
         {activeUser && (
-          // ...history, analytics, summary, badges...
+          <section className="analytics-section">
+            <h2>Performance</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart
+                data={activeUser.quizHistory?.map((q, i) => ({ name: `Quiz ${i + 1}`, score: q.score })) || []}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis domain={[0, 10]} />
+                <Tooltip />
+                <Legend onClick={() => setShowLineA(!showLineA)} />
+                {showLineA && <Line type="monotone" dataKey="score" stroke="#8884d8" />}
+              </LineChart>
+            </ResponsiveContainer>
+            <h3>Badges:</h3>
+            <ul className="badges">
+              {activeUser.badges?.map((badge, idx) => <li key={idx}>{badge}</li>)}
+            </ul>
+          </section>
         )}
       </main>
     </div>
