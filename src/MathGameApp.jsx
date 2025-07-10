@@ -1,1 +1,3 @@
-<INSERTED CODE FROM EARLIER>
+export default function MathGameApp() {
+  // component logic
+}
