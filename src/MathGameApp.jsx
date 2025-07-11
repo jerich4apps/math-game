@@ -79,6 +79,7 @@ export default function MathGameApp() {
     if (parseFloat(answer) === current.correctAnswer) {
       setFeedback("Correct!");
       setDifficultyLevel(prev => Math.min(prev + 1, 10));
+      setAnswer("");
       if (quizMode) setScore(score + 1);
     } else {
       setFeedback("Try again!");
@@ -128,16 +129,21 @@ export default function MathGameApp() {
           <div className="game-section">
             {!quizFinished ? (
               <>
-                <p style={{ fontSize: "3rem", textAlign: "center" }}><strong>Question:</strong> {problem?.question}</p>
-                <input
-                  type="text"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Enter your answer"
-                />
-                <button onClick={handleSubmitAnswer}>Submit</button>
-                <button onClick={() => setShowHint(true)}>Hint</button>
-                <button onClick={startQuiz}>Skip</button>
+                <p style={{ fontSize: "3rem", textAlign: "center", marginTop: "50px" }}><strong>Question:</strong> {problem?.question}</p>
+                <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+                  <input
+                    type="text"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Enter your answer"
+                    style={{ fontSize: "1.5rem", padding: "10px", width: "200px" }}
+                  />
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "10px" }}>
+                  <button onClick={handleSubmitAnswer}>Submit</button>
+                  <button onClick={() => setShowHint(true)}>Hint</button>
+                  <button onClick={startQuiz}>Skip</button>
+                </div>
                 {showHint && <p className="hint">Hint: {problem?.hint}</p>}
                 <p className="feedback">{feedback}</p>
               </>
