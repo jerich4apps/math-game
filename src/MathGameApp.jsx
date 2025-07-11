@@ -1,4 +1,4 @@
-// CLEANED UP VERSION WITH 2ND & 3RD GRADE SUPPORT + QUIZ FORMAT + THEME SELECTOR + USER PROFILES + AVATARS + USER SCORE TRACKING + CHARTS + BADGES + ANALYTICS BY GRADE/DIFFICULTY + WEEKLY/MONTHLY SUMMARIES + STYLESHEET LAYOUT + COMPACT LAYOUT + TOGGLABLE CHART LEGENDS + DROPDOWN ON LOGIN
+// SIMPLIFIED TEST LAYOUT FOR DEBUGGING UI VISIBILITY ISSUES WITH DIFFICULTY SCALING
 import { useState, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend
@@ -6,22 +6,27 @@ import {
 import "./App.css";
 
 export default function MathGameApp() {
-  const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem("mathUsers")) || []);
-  const [activeUser, setActiveUser] = useState(() => JSON.parse(localStorage.getItem("activeMathUser")) || null);
   const [grade, setGrade] = useState("4");
   const [difficulty, setDifficulty] = useState("easy");
+  const [difficultyLevel, setDifficultyLevel] = useState(1); // numeric difficulty level for scaling
   const [problem, setProblem] = useState(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
   const [showHint, setShowHint] = useState(false);
-  const [newUserName, setNewUserName] = useState("");
-  const [avatarDataUrl, setAvatarDataUrl] = useState(null);
-  const [theme, setTheme] = useState("");
+  const [theme, setTheme] = useState("/images/forest.jpg");
   const [quizMode, setQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [showLineA, setShowLineA] = useState(true);
+
+  const activeUser = {
+    name: "TestUser",
+    avatar: "/avatars/avatar1.png",
+    quizHistory: [],
+    badges: []
+  };
 
   useEffect(() => {
     if (theme) {
@@ -33,21 +38,24 @@ export default function MathGameApp() {
   }, [theme]);
 
   useEffect(() => {
-    if (activeUser && !quizMode) {
-      setProblem(generateProblem(grade, difficulty));
+    if (!quizMode) {
+      setProblem(generateProblem(difficultyLevel));
     }
-  }, [activeUser, grade, difficulty, quizMode]);
+  }, [grade, difficultyLevel, quizMode]);
 
-  useEffect(() => {
-    localStorage.setItem("mathUsers", JSON.stringify(users));
-  }, [users]);
-
-  function generateProblem(gradeLevel = "4", difficultyLevel = "easy") {
-    // ...same as before...
+  function generateProblem(level = 1) {
+    const maxVal = 10 + level * 2;
+    const a = Math.floor(Math.random() * maxVal + 1);
+    const b = Math.floor(Math.random() * maxVal + 1);
+    return {
+      question: `${a} + ${b}`,
+      correctAnswer: a + b,
+      hint: `Try counting on from ${a}`
+    };
   }
 
   function startQuiz() {
-    const questions = Array.from({ length: 10 }, () => generateProblem(grade, difficulty));
+    const questions = Array.from({ length: 10 }, () => generateProblem(difficultyLevel));
     setQuizQuestions(questions);
     setCurrentQuestionIndex(0);
     setScore(0);
@@ -60,6 +68,7 @@ export default function MathGameApp() {
     const current = quizMode ? quizQuestions[currentQuestionIndex] : problem;
     if (parseFloat(answer) === current.correctAnswer) {
       setFeedback("Correct!");
+      setDifficultyLevel(prev => Math.min(prev + 1, 10));
       if (quizMode) setScore(score + 1);
     } else {
       setFeedback("Try again!");
@@ -77,119 +86,72 @@ export default function MathGameApp() {
         } else {
           setQuizFinished(true);
           setQuizMode(false);
-
-          const updatedUsers = users.map((u) => {
-            if (u.name === activeUser.name) {
-              const history = u.quizHistory || [];
-              const updatedHistory = [...history, { grade, difficulty, score, timestamp: new Date().toISOString() }];
-              const badges = generateBadges(updatedHistory);
-              const updatedUser = { ...u, quizHistory: updatedHistory, badges };
-              setActiveUser(updatedUser);
-              localStorage.setItem("activeMathUser", JSON.stringify(updatedUser));
-              return updatedUser;
-            }
-            return u;
-          });
-          setUsers(updatedUsers);
         }
       }, 1000);
     }
   }
 
-  function generateBadges(history) {
-    const badges = [];
-    const highScores = history.filter((q) => q.score >= 9);
-    if (highScores.length >= 1) badges.push("⭐ High Score!");
-    if (history.length >= 5) badges.push("🎯 Quiz Veteran");
-    return badges;
-  }
-
-  function groupBy(array, keyFn) {
-    return array.reduce((acc, item) => {
-      const key = keyFn(item);
-      acc[key] = acc[key] || [];
-      acc[key].push(item);
-      return acc;
-    }, {});
-  }
-
   return (
     <div className="layout compact">
       <header className="app-header">
-        <h1>Math Game</h1>
-        {activeUser && (
-          <div className="user-info">
-            <span>{activeUser.name}</span>
-            {activeUser.avatar && <img src={activeUser.avatar} alt="avatar" width={40} />}
-          </div>
-        )}
+        <h1>Math Game - Test Layout</h1>
+        <div className="user-info">
+          <span>{activeUser.name}</span>
+          <img src={activeUser.avatar} alt="avatar" width={40} />
+        </div>
         <div className="selectors">
           <select value={grade} onChange={(e) => setGrade(e.target.value)}>
             <option value="2">2nd Grade</option>
             <option value="3">3rd Grade</option>
             <option value="4">4th Grade</option>
-            <option value="5">5th Grade</option>
-            <option value="6">6th Grade</option>
-            <option value="7">7th Grade</option>
-            <option value="8">8th Grade</option>
           </select>
-          <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-          <select onChange={(e) => setTheme(e.target.value)}>
-            <option value="">Theme</option>
+          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
             <option value="/images/space.jpg">Space</option>
             <option value="/images/forest.jpg">Forest</option>
             <option value="/images/beach.jpg">Beach</option>
-            <option value="/images/park.jpg">Park</option>
-            <option value="/images/sky.jpg">Sky</option>
           </select>
         </div>
       </header>
 
       <main className="main-content">
         <section className="game-panel">
-          {activeUser ? (
-            // ...game section...
-          ) : (
-            <section className="login-panel">
-              <input placeholder="Enter your name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
-              <select onChange={(e) => setAvatarDataUrl(e.target.value)}>
-                <option value="">Avatar</option>
-                <option value="/avatars/avatar1.png">Avatar 1</option>
-                <option value="/avatars/avatar2.png">Avatar 2</option>
-                <option value="/avatars/avatar3.png">Avatar 3</option>
-                <option value="/avatars/avatar4.png">Avatar 4</option>
-              </select>
-              <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-                <option value="2">2nd Grade</option>
-                <option value="3">3rd Grade</option>
-                <option value="4">4th Grade</option>
-                <option value="5">5th Grade</option>
-                <option value="6">6th Grade</option>
-                <option value="7">7th Grade</option>
-                <option value="8">8th Grade</option>
-              </select>
-              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-              <button onClick={() => {
-                const user = { name: newUserName, avatar: avatarDataUrl, quizHistory: [], badges: [] };
-                setUsers([...users, user]);
-                setActiveUser(user);
-                localStorage.setItem("activeMathUser", JSON.stringify(user));
-              }}>Start</button>
-            </section>
-          )}
+          <div className="game-section">
+            {!quizFinished ? (
+              <>
+                <p><strong>Question:</strong> {problem?.question}</p>
+                <input
+                  type="text"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  placeholder="Enter your answer"
+                />
+                <button onClick={handleSubmitAnswer}>Submit</button>
+                <button onClick={() => setShowHint(true)}>Hint</button>
+                <button onClick={startQuiz}>Start Quiz</button>
+                {showHint && <p className="hint">Hint: {problem?.hint}</p>}
+                <p className="feedback">{feedback}</p>
+              </>
+            ) : (
+              <p className="final-score">You scored {score} out of 10!</p>
+            )}
+          </div>
         </section>
 
-        {activeUser && (
-          // ...history, analytics, summary, badges...
-        )}
+        <section className="analytics-section">
+          <h2>Test Graph</h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart
+              data={[{ name: "Q1", score: 7 }, { name: "Q2", score: 9 }]}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 10]} />
+              <Tooltip />
+              <Legend onClick={() => setShowLineA(!showLineA)} />
+              {showLineA && <Line type="monotone" dataKey="score" stroke="#8884d8" />}
+            </LineChart>
+          </ResponsiveContainer>
+        </section>
       </main>
     </div>
   );
