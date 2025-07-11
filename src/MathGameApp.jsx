@@ -8,7 +8,7 @@ import "./App.css";
 export default function MathGameApp() {
   const [grade, setGrade] = useState("4");
   const [difficulty, setDifficulty] = useState("easy");
-  const [difficultyLevel, setDifficultyLevel] = useState(1); // numeric difficulty level for scaling
+  const [difficultyLevel, setDifficultyLevel] = useState(1);
   const [problem, setProblem] = useState(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -42,6 +42,16 @@ export default function MathGameApp() {
       setProblem(generateProblem(difficultyLevel));
     }
   }, [grade, difficultyLevel, quizMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        handleSubmitAnswer();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [answer]);
 
   function generateProblem(level = 1) {
     const maxVal = 10 + level * 2;
@@ -118,7 +128,7 @@ export default function MathGameApp() {
           <div className="game-section">
             {!quizFinished ? (
               <>
-                <p><strong>Question:</strong> {problem?.question}</p>
+                <p style={{ fontSize: "3rem", textAlign: "center" }}><strong>Question:</strong> {problem?.question}</p>
                 <input
                   type="text"
                   value={answer}
@@ -127,7 +137,7 @@ export default function MathGameApp() {
                 />
                 <button onClick={handleSubmitAnswer}>Submit</button>
                 <button onClick={() => setShowHint(true)}>Hint</button>
-                <button onClick={startQuiz}>Start Quiz</button>
+                <button onClick={startQuiz}>Skip</button>
                 {showHint && <p className="hint">Hint: {problem?.hint}</p>}
                 <p className="feedback">{feedback}</p>
               </>
