@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend
 } from "recharts";
+import { motion } from "framer-motion";
 import "./App.css";
 
 export default function MathGameApp() {
@@ -12,7 +13,9 @@ export default function MathGameApp() {
   const [problem, setProblem] = useState(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [showHint, setShowHint] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [incorrectCount, setIncorrectCount] = useState(0);
+  const [badges, setBadges] = useState([]);
   const [theme, setTheme] = useState("/images/forest.jpg");
   const [quizMode, setQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState([]);
@@ -20,6 +23,7 @@ export default function MathGameApp() {
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
   const [showLineA, setShowLineA] = useState(true);
+  const [showHint, setShowHint] = useState(false);
 
   const activeUser = {
     name: "TestUser",
@@ -54,6 +58,18 @@ export default function MathGameApp() {
   }, [answer]);
 
   function generateProblem(level = 1) {
+    const gradeNum = parseInt(grade);
+
+    if (gradeNum >= 7 && level >= 5) {
+      const a = Math.floor(Math.random() * 10 + 1);
+      const b = Math.floor(Math.random() * 10 + 1);
+      return {
+        question: `${a}x + ${b} = ${a * 5 + b}. Solve for x`,
+        correctAnswer: 5,
+        hint: `Think of how to isolate x`
+      };
+    }
+
     const maxVal = 10 + level * 2;
     const a = Math.floor(Math.random() * maxVal + 1);
     const b = Math.floor(Math.random() * maxVal + 1);
@@ -74,15 +90,43 @@ export default function MathGameApp() {
     setProblem(questions[0]);
   }
 
+  function updateBadges(newCorrect) {
+    const allBadges = [];
+    if (newCorrect >= 10 && newCorrect < 50) {
+      const streaks = Math.floor(newCorrect / 10);
+      for (let i = 1; i <= streaks; i++) {
+        allBadges.push(`⭐ ${i * 10}-Streak`);
+      }
+    } else if (newCorrect >= 50 && newCorrect < 200) {
+      const milestones = Math.floor((newCorrect - 50) / 25);
+      for (let i = 0; i <= milestones; i++) {
+        allBadges.push(`🦄 ${50 + i * 25} Correct!`);
+      }
+    } else if (newCorrect >= 200) {
+      const expertLevels = Math.floor((newCorrect - 200) / 50);
+      for (let i = 0; i <= expertLevels; i++) {
+        allBadges.push(`🦄✨ ${200 + i * 50}+ Expert`);
+      }
+    }
+    setBadges(allBadges);
+  }
+
   function handleSubmitAnswer() {
     const current = quizMode ? quizQuestions[currentQuestionIndex] : problem;
     if (parseFloat(answer) === current.correctAnswer) {
+      const newCorrect = correctCount + 1;
+      setCorrectCount(newCorrect);
+      setIncorrectCount(0);
+      updateBadges(newCorrect);
       setFeedback("Correct!");
       setDifficultyLevel(prev => Math.min(prev + 1, 10));
       setAnswer("");
       if (quizMode) setScore(score + 1);
     } else {
+      setIncorrectCount(prev => prev + 1);
+      setCorrectCount(0);
       setFeedback("Try again!");
+      setDifficultyLevel(1);
     }
 
     if (quizMode) {
@@ -93,7 +137,6 @@ export default function MathGameApp() {
           setProblem(quizQuestions[nextIndex]);
           setAnswer("");
           setFeedback("");
-          setShowHint(false);
         } else {
           setQuizFinished(true);
           setQuizMode(false);
@@ -115,6 +158,10 @@ export default function MathGameApp() {
             <option value="2">2nd Grade</option>
             <option value="3">3rd Grade</option>
             <option value="4">4th Grade</option>
+            <option value="5">5th Grade</option>
+            <option value="6">6th Grade</option>
+            <option value="7">7th Grade</option>
+            <option value="8">8th Grade</option>
           </select>
           <select value={theme} onChange={(e) => setTheme(e.target.value)}>
             <option value="/images/space.jpg">Space</option>
@@ -129,7 +176,23 @@ export default function MathGameApp() {
           <div className="game-section">
             {!quizFinished ? (
               <>
-                <p style={{ fontSize: "3rem", textAlign: "center", marginTop: "50px" }}><strong>Question:</strong> {problem?.question}</p>
+                <motion.div
+                  initial={{ opacity: 0, y: -30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.65)",
+                    padding: "20px",
+                    borderRadius: "12px",
+                    textAlign: "center",
+                    margin: "30px auto",
+                    maxWidth: "80%",
+                  }}
+                >
+                  <p style={{ fontSize: "3rem", color: "#ffffff" }}>
+                    <strong>Question:</strong> {problem?.question}
+                  </p>
+                </motion.div>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
                   <input
                     type="text"
@@ -146,6 +209,19 @@ export default function MathGameApp() {
                 </div>
                 {showHint && <p className="hint">Hint: {problem?.hint}</p>}
                 <p className="feedback">{feedback}</p>
+                <p style={{ textAlign: "center" }}>
+                  Correct: {correctCount} | Incorrect: {incorrectCount}
+                </p>
+                {badges.length > 0 && (
+                  <div style={{ textAlign: "center", marginTop: "10px" }}>
+                    <strong>Badges:</strong>
+                    <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "5px" }}>
+                      {badges.map((badge, idx) => (
+                        <span key={idx} style={{ padding: "5px 10px", backgroundColor: "#ffe0f0", borderRadius: "12px", fontWeight: "bold" }}>{badge}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <p className="final-score">You scored {score} out of 10!</p>
@@ -153,9 +229,9 @@ export default function MathGameApp() {
           </div>
         </section>
 
-        <section className="analytics-section">
+        <section className="analytics-section" style={{ width: "33%" }}>
           <h2>Test Graph</h2>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={250}>
             <LineChart
               data={[{ name: "Q1", score: 7 }, { name: "Q2", score: 9 }]}
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -164,9 +240,15 @@ export default function MathGameApp() {
               <YAxis domain={[0, 10]} />
               <Tooltip />
               <Legend onClick={() => setShowLineA(!showLineA)} />
-              {showLineA && <Line type="monotone" dataKey="score" stroke="#8884d8" />}
+              {showLineA && (
+                <Line type="monotone" dataKey="score" stroke="#e75480" strokeWidth={4} name="Performance" />
+              )}
             </LineChart>
           </ResponsiveContainer>
+          <div style={{ textAlign: "center", marginTop: "10px" }}>
+            <strong>Correct:</strong> {correctCount} <br />
+            <strong>Incorrect:</strong> {incorrectCount}
+          </div>
         </section>
       </main>
     </div>
