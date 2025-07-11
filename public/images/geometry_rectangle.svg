@@ -1,0 +1,5 @@
+<svg width="200" height="120" xmlns="http://www.w3.org/2000/svg">
+  <rect x="30" y="30" width="140" height="60" fill="none" stroke="black" stroke-width="2"/>
+  <text x="90" y="110" font-size="12">Length</text>
+  <text x="5" y="65" font-size="12" transform="rotate(-90 5,65)">Width</text>
+</svg>
