@@ -70,7 +70,7 @@ export default function MathGameApp() {
       };
     }
 
-    const maxVal = 10 + level * 2;
+    const maxVal = 10 + level * 2 + (gradeNum - 2) * 5;
     const a = Math.floor(Math.random() * maxVal + 1);
     const b = Math.floor(Math.random() * maxVal + 1);
     return {
@@ -145,6 +145,14 @@ export default function MathGameApp() {
     }
   }
 
+  function handleGradeChange(newGrade) {
+    setGrade(newGrade);
+    setDifficultyLevel(1);
+    if (!quizMode) {
+      setProblem(generateProblem(1));
+    }
+  }
+
   return (
     <div className="layout compact">
       <header className="app-header">
@@ -154,7 +162,7 @@ export default function MathGameApp() {
           <img src={activeUser.avatar} alt="avatar" width={40} />
         </div>
         <div className="selectors">
-          <select value={grade} onChange={(e) => setGrade(e.target.value)}>
+          <select value={grade} onChange={(e) => handleGradeChange(e.target.value)}>
             <option value="2">2nd Grade</option>
             <option value="3">3rd Grade</option>
             <option value="4">4th Grade</option>
