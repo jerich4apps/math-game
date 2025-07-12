@@ -1,96 +1,62 @@
-/* App.css */
-
-body {
-  margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f0f4f8;
-  color: #333;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-body.dark-mode {
-  background-color: #121212;
-  color: #e0e0e0;
-}
-
-.topic-selector {
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 8px;
-  max-width: 800px;
-  margin: 20px auto;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  transition: background 0.3s;
-}
-
-body.dark-mode .topic-selector {
-  background: rgba(40, 40, 40, 0.85);
-}
-
-.topic-selector h3 {
-  margin-bottom: 10px;
-}
-
-.topic-group {
-  margin-bottom: 20px;
-}
-
-.topic-group h4 {
-  margin: 10px 0;
-  color: #444;
-  font-weight: bold;
-}
-
-body.dark-mode .topic-group h4 {
-  color: #ddd;
-}
-
-.toggle-container {
+/* Core layout adjustments */
+.app-container {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100vh;
+  padding: 10px;
 }
 
-.toggle-btn {
-  padding: 8px 16px;
-  border: 1px solid #ccc;
-  background-color: #e0e0e0;
-  color: #333;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  font-size: 14px;
+/* Panels */
+.toggle-panel {
+  flex: 1;
+  max-width: 200px;
 }
 
-body.dark-mode .toggle-btn {
-  background-color: #444;
-  color: #ddd;
-  border-color: #666;
+.problem-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.toggle-btn:hover:not(:disabled) {
-  background-color: #d4d4d4;
+.chart-panel {
+  flex: 1;
+  max-width: 300px;
 }
 
-body.dark-mode .toggle-btn:hover:not(:disabled) {
-  background-color: #555;
-}
+/* Mobile styles */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+    align-items: center;
+  }
 
-.toggle-btn.active {
-  background-color: #6c5ce7;
-  color: white;
-  border-color: #5a4bb0;
-}
+  .toggle-panel,
+  .chart-panel {
+    max-width: 100%;
+    width: 100%;
+    order: 1;
+  }
 
-.toggle-btn:disabled {
-  background-color: #ddd;
-  color: #999;
-  cursor: not-allowed;
-  border-style: dashed;
-}
+  .problem-panel {
+    order: 0;
+    padding: 10px 0;
+  }
 
-body.dark-mode .toggle-btn:disabled {
-  background-color: #2a2a2a;
-  color: #666;
-  border-style: dashed;
+  .chart-panel {
+    order: 2;
+  }
+
+  input,
+  button,
+  select {
+    font-size: 1.1rem;
+  }
+
+  .problem-panel h2 {
+    font-size: 1.3rem;
+    text-align: center;
+  }
 }
