@@ -1,158 +1,226 @@
-// SIMPLIFIED TEST LAYOUT FOR DEBUGGING UI VISIBILITY ISSUES WITH DIFFICULTY SCALING
-import { useState, useEffect } from "react";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend
-} from "recharts";
-import "./App.css";
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { motion } from 'framer-motion';
+import TriangleSVG from './svgs/TriangleSVG';
+import SineWaveSVG from './svgs/SineWaveSVG';
+import CosineWaveSVG from './svgs/CosineWaveSVG';
+import TangentWaveSVG from './svgs/TangentWaveSVG';
+import CircleSVG from './svgs/CircleSVG';
+import AngleSVG from './svgs/AngleSVG';
+import SquareSVG from './svgs/SquareSVG';
 
-export default function MathGameApp() {
-  const [grade, setGrade] = useState("4");
-  const [difficulty, setDifficulty] = useState("easy");
-  const [difficultyLevel, setDifficultyLevel] = useState(1); // numeric difficulty level for scaling
+const topics = {
+  Arithmetic: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
+  Geometry: ['Shapes', 'Area', 'Perimeter', 'Angles'],
+  Fractions: ['Simplifying', 'Converting', 'Operations'],
+  Algebra: ['Equations', 'Variables', 'Expressions'],
+  Trigonometry: ['Sine', 'Cosine', 'Tangent']
+};
+
+const gradeTopicLimits = {
+  2: ['Addition'],
+  3: ['Addition', 'Subtraction', 'Multiplication'],
+  4: ['Addition', 'Subtraction', 'Multiplication'],
+  5: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions'],
+  6: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry'],
+  7: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry'],
+  8: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry']
+};
+
+const getDifficultyCap = (grade) => {
+  if (grade === 2) return 1;
+  if (grade === 3 || grade === 4) return 3;
+  if (grade === 5 || grade === 6) return 6;
+  return 7;
+};
+
+const MathGameApp = () => {
+  const [selectedGrade, setSelectedGrade] = useState(() => Number(localStorage.getItem('selectedGrade')) || 2);
+  const [enabledTopics, setEnabledTopics] = useState(() => JSON.parse(localStorage.getItem('enabledTopics')) || {});
+  const [theme, setTheme] = useState('/images/forest.jpg');
   const [problem, setProblem] = useState(null);
-  const [answer, setAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [showHint, setShowHint] = useState(false);
-  const [theme, setTheme] = useState("/images/forest.jpg");
-  const [quizMode, setQuizMode] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [showLineA, setShowLineA] = useState(true);
-
-  const activeUser = {
-    name: "TestUser",
-    avatar: "/avatars/avatar1.png",
-    quizHistory: [],
-    badges: []
-  };
+  const [answer, setAnswer] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [correctCount, setCorrectCount] = useState(() => Number(localStorage.getItem('correctCount')) || 0);
+  const [incorrectCount, setIncorrectCount] = useState(() => Number(localStorage.getItem('incorrectCount')) || 0);
+  const [difficultyLevel, setDifficultyLevel] = useState(1);
+  const [badges, setBadges] = useState(() => JSON.parse(localStorage.getItem('badges')) || []);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    if (theme) {
-      document.body.style.backgroundImage = `url(${theme})`;
-      document.body.style.backgroundSize = "cover";
-      document.body.style.backgroundRepeat = "no-repeat";
-      document.body.style.backgroundPosition = "center center";
-    }
+    document.body.style.backgroundImage = `url(${theme})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundPosition = 'center center';
   }, [theme]);
 
   useEffect(() => {
-    if (!quizMode) {
-      setProblem(generateProblem(difficultyLevel));
+    const allowedTopics = gradeTopicLimits[selectedGrade];
+    const newState = {};
+    Object.values(topics).flat().forEach(topic => {
+      newState[topic] = allowedTopics.includes(topic);
+    });
+    setEnabledTopics(newState);
+    setDifficultyLevel(1);
+    setCorrectCount(0);
+    setIncorrectCount(0);
+    localStorage.setItem('selectedGrade', selectedGrade);
+  }, [selectedGrade]);
+
+  useEffect(() => {
+    setProblem(generateProblem());
+    localStorage.setItem('enabledTopics', JSON.stringify(enabledTopics));
+  }, [enabledTopics]);
+
+  const handleToggle = (topic) => {
+    if (!gradeTopicLimits[selectedGrade].includes(topic)) return;
+    setEnabledTopics(prev => ({ ...prev, [topic]: !prev[topic] }));
+  };
+
+  const generateProblem = () => {
+    const allEnabled = Object.entries(enabledTopics).filter(([k, v]) => v).map(([k]) => k);
+    const pick = allEnabled[Math.floor(Math.random() * allEnabled.length)];
+    let q = '', a = 0, hint = '', svg = null;
+
+    const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    switch (pick) {
+      case 'Addition': {
+        const x = random(1, 50), y = random(1, 50);
+        q = `What is ${x} + ${y}?`;
+        a = x + y;
+        hint = 'Add the two numbers.';
+        break;
+      }
+      case 'Subtraction': {
+        const x = random(10, 99), y = random(1, x);
+        q = `What is ${x} - ${y}?`;
+        a = x - y;
+        hint = 'Subtract the second number from the first.';
+        break;
+      }
+      case 'Multiplication': {
+        const x = random(2, 12), y = random(2, 12);
+        q = `What is ${x} × ${y}?`;
+        a = x * y;
+        hint = 'Multiply the numbers.';
+        break;
+      }
+      case 'Division': {
+        const y = random(2, 12), aTemp = random(2, 12);
+        const x = y * aTemp;
+        q = `What is ${x} ÷ ${y}?`;
+        a = aTemp;
+        hint = 'Divide the first number by the second.';
+        break;
+      }
+      case 'Sine': {
+        q = 'What is sin(90°)?';
+        a = 1;
+        hint = 'Think about the unit circle.';
+        svg = <SineWaveSVG />;
+        break;
+      }
+      case 'Cosine': {
+        q = 'What is cos(0°)?';
+        a = 1;
+        hint = 'Think about the unit circle.';
+        svg = <CosineWaveSVG />;
+        break;
+      }
+      case 'Tangent': {
+        q = 'What is tan(45°)?';
+        a = 1;
+        hint = 'Opposite over adjacent.';
+        svg = <TangentWaveSVG />;
+        break;
+      }
+      case 'Shapes': {
+        q = 'Identify this shape.';
+        a = 'triangle';
+        hint = 'It has three sides.';
+        svg = <TriangleSVG />;
+        break;
+      }
+      case 'Angles': {
+        q = 'How many degrees in a right angle?';
+        a = 90;
+        hint = 'It forms an L shape.';
+        svg = <AngleSVG />;
+        break;
+      }
     }
-  }, [grade, difficultyLevel, quizMode]);
+    return { question: q, correctAnswer: a, hint, svg };
+  };
 
-  function generateProblem(level = 1) {
-    const maxVal = 10 + level * 2;
-    const a = Math.floor(Math.random() * maxVal + 1);
-    const b = Math.floor(Math.random() * maxVal + 1);
-    return {
-      question: `${a} + ${b}`,
-      correctAnswer: a + b,
-      hint: `Try counting on from ${a}`
-    };
-  }
-
-  function startQuiz() {
-    const questions = Array.from({ length: 10 }, () => generateProblem(difficultyLevel));
-    setQuizQuestions(questions);
-    setCurrentQuestionIndex(0);
-    setScore(0);
-    setQuizFinished(false);
-    setQuizMode(true);
-    setProblem(questions[0]);
-  }
-
-  function handleSubmitAnswer() {
-    const current = quizMode ? quizQuestions[currentQuestionIndex] : problem;
-    if (parseFloat(answer) === current.correctAnswer) {
-      setFeedback("Correct!");
-      setDifficultyLevel(prev => Math.min(prev + 1, 10));
-      if (quizMode) setScore(score + 1);
+  const checkAnswer = () => {
+    if (!problem) return;
+    const isCorrect = String(answer).trim().toLowerCase() === String(problem.correctAnswer).toLowerCase();
+    if (isCorrect) {
+      const newCorrect = correctCount + 1;
+      setCorrectCount(newCorrect);
+      const newLevel = Math.min(difficultyLevel + 1, getDifficultyCap(selectedGrade));
+      setDifficultyLevel(newLevel);
+      if (newCorrect % 5 === 0) setBadges(prev => [...prev, '⭐']);
+      setFeedback('Correct!');
+      setAnswer('');
     } else {
-      setFeedback("Try again!");
+      const newIncorrect = incorrectCount + 1;
+      setIncorrectCount(newIncorrect);
+      setDifficultyLevel(1);
+      setFeedback(`Incorrect. Hint: ${problem.hint}`);
     }
-
-    if (quizMode) {
-      setTimeout(() => {
-        if (currentQuestionIndex < quizQuestions.length - 1) {
-          const nextIndex = currentQuestionIndex + 1;
-          setCurrentQuestionIndex(nextIndex);
-          setProblem(quizQuestions[nextIndex]);
-          setAnswer("");
-          setFeedback("");
-          setShowHint(false);
-        } else {
-          setQuizFinished(true);
-          setQuizMode(false);
-        }
-      }, 1000);
-    }
-  }
+    setProblem(generateProblem());
+    localStorage.setItem('correctCount', correctCount);
+    localStorage.setItem('incorrectCount', incorrectCount);
+    localStorage.setItem('badges', JSON.stringify(badges));
+  };
 
   return (
-    <div className="layout compact">
-      <header className="app-header">
-        <h1>Math Game - Test Layout</h1>
-        <div className="user-info">
-          <span>{activeUser.name}</span>
-          <img src={activeUser.avatar} alt="avatar" width={40} />
-        </div>
-        <div className="selectors">
-          <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-            <option value="2">2nd Grade</option>
-            <option value="3">3rd Grade</option>
-            <option value="4">4th Grade</option>
-          </select>
-          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-            <option value="/images/space.jpg">Space</option>
-            <option value="/images/forest.jpg">Forest</option>
-            <option value="/images/beach.jpg">Beach</option>
-          </select>
-        </div>
-      </header>
-
-      <main className="main-content">
-        <section className="game-panel">
-          <div className="game-section">
-            {!quizFinished ? (
-              <>
-                <p><strong>Question:</strong> {problem?.question}</p>
-                <input
-                  type="text"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Enter your answer"
-                />
-                <button onClick={handleSubmitAnswer}>Submit</button>
-                <button onClick={() => setShowHint(true)}>Hint</button>
-                <button onClick={startQuiz}>Start Quiz</button>
-                {showHint && <p className="hint">Hint: {problem?.hint}</p>}
-                <p className="feedback">{feedback}</p>
-              </>
-            ) : (
-              <p className="final-score">You scored {score} out of 10!</p>
-            )}
+    <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
+      <div className="left-panel">
+        <select value={selectedGrade} onChange={(e) => setSelectedGrade(Number(e.target.value))}>
+          {[2,3,4,5,6,7,8].map(grade => <option key={grade} value={grade}>Grade {grade}</option>)}
+        </select>
+        {Object.entries(topics).map(([category, items]) => (
+          <div key={category} className="topic-group">
+            <strong>{category}</strong>
+            {items.map(topic => (
+              <label key={topic} className="topic-toggle">
+                <input type="checkbox" disabled={!gradeTopicLimits[selectedGrade].includes(topic)} checked={enabledTopics[topic]} onChange={() => handleToggle(topic)} />
+                {topic}
+              </label>
+            ))}
           </div>
-        </section>
+        ))}
+      </div>
 
-        <section className="analytics-section">
-          <h2>Test Graph</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart
-              data={[{ name: "Q1", score: 7 }, { name: "Q2", score: 9 }]}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 10]} />
-              <Tooltip />
-              <Legend onClick={() => setShowLineA(!showLineA)} />
-              {showLineA && <Line type="monotone" dataKey="score" stroke="#8884d8" />}
-            </LineChart>
-          </ResponsiveContainer>
-        </section>
-      </main>
+      <div className="center-panel">
+        <motion.div className="question-block" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <h1>{problem?.question}</h1>
+          {problem?.svg && <div className="svg-container">{problem.svg}</div>}
+          <input type="text" value={answer} onChange={(e) => setAnswer(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && checkAnswer()} />
+          <p className="hint">{feedback}</p>
+        </motion.div>
+      </div>
+
+      <div className="right-panel">
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={[{name: 'Correct', value: correctCount}, {name: 'Incorrect', value: incorrectCount}]}> 
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
+        <div className="badges">
+          {badges.map((badge, index) => <div key={index} className="badge">{badge}</div>)}
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default MathGameApp;
