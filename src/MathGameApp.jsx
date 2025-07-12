@@ -1,264 +1,226 @@
-// SIMPLIFIED TEST LAYOUT FOR DEBUGGING UI VISIBILITY ISSUES WITH DIFFICULTY SCALING
-import { useState, useEffect } from "react";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend
-} from "recharts";
-import { motion } from "framer-motion";
-import "./App.css";
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { motion } from 'framer-motion';
 
-export default function MathGameApp() {
-  const [grade, setGrade] = useState("4");
-  const [difficulty, setDifficulty] = useState("easy");
-  const [difficultyLevel, setDifficultyLevel] = useState(1);
+const topics = {
+  Arithmetic: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
+  Geometry: ['Shapes', 'Area', 'Perimeter', 'Angles'],
+  Fractions: ['Simplifying', 'Converting', 'Operations'],
+  Algebra: ['Equations', 'Variables', 'Expressions'],
+  Trigonometry: ['Sine', 'Cosine', 'Tangent']
+};
+
+const gradeTopicLimits = {
+  2: ['Addition'],
+  3: ['Addition', 'Subtraction', 'Multiplication'],
+  4: ['Addition', 'Subtraction', 'Multiplication'],
+  5: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions'],
+  6: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry'],
+  7: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry'],
+  8: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry']
+};
+
+const getDifficultyCap = (grade) => {
+  if (grade === 2) return 1;
+  if (grade === 3 || grade === 4) return 3;
+  if (grade === 5 || grade === 6) return 6;
+  return 7;
+};
+
+const MathGameApp = () => {
+  const [selectedGrade, setSelectedGrade] = useState(2);
+  const [enabledTopics, setEnabledTopics] = useState({});
+  const [theme, setTheme] = useState('/images/forest.jpg');
   const [problem, setProblem] = useState(null);
-  const [answer, setAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const [answer, setAnswer] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [difficultyLevel, setDifficultyLevel] = useState(1);
   const [badges, setBadges] = useState([]);
-  const [theme, setTheme] = useState("/images/forest.jpg");
-  const [quizMode, setQuizMode] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [showLineA, setShowLineA] = useState(true);
-  const [showHint, setShowHint] = useState(false);
-
-  const activeUser = {
-    name: "TestUser",
-    avatar: "/avatars/avatar1.png",
-    quizHistory: [],
-    badges: []
-  };
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    if (theme) {
-      document.body.style.backgroundImage = `url(${theme})`;
-      document.body.style.backgroundSize = "cover";
-      document.body.style.backgroundRepeat = "no-repeat";
-      document.body.style.backgroundPosition = "center center";
-    }
+    document.body.style.backgroundImage = `url(${theme})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundPosition = 'center center';
   }, [theme]);
 
   useEffect(() => {
-    if (!quizMode) {
-      setProblem(generateProblem(difficultyLevel));
-    }
-  }, [grade, difficultyLevel, quizMode]);
+    const allowedTopics = gradeTopicLimits[selectedGrade];
+    const newState = {};
+    Object.values(topics).flat().forEach(topic => {
+      newState[topic] = allowedTopics.includes(topic);
+    });
+    setEnabledTopics(newState);
+    setDifficultyLevel(1);
+    setCorrectCount(0);
+    setIncorrectCount(0);
+  }, [selectedGrade]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Enter") {
-        handleSubmitAnswer();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [answer]);
+    setProblem(generateProblem());
+  }, [enabledTopics]);
 
-  function generateProblem(level = 1) {
-    const gradeNum = parseInt(grade);
+  const handleToggle = (topic) => {
+    if (!gradeTopicLimits[selectedGrade].includes(topic)) return;
+    setEnabledTopics(prev => ({ ...prev, [topic]: !prev[topic] }));
+  };
 
-    if (gradeNum >= 7 && level >= 5) {
+  const generateProblem = () => {
+    const level = difficultyLevel;
+    const grade = selectedGrade;
+    const topicsArray = Object.keys(enabledTopics).filter(t => enabledTopics[t]);
+
+    if (topicsArray.includes('Equations') && level >= 7) {
+      const a = Math.floor(Math.random() * 10 + 1);
+      const x = Math.floor(Math.random() * 10);
+      const b = Math.floor(Math.random() * 10);
+      return { question: `${a}x + ${b} = ${a * x + b}. Solve for x`, correctAnswer: x, hint: 'Isolate x by undoing operations' };
+    }
+
+    if (topicsArray.includes('Sine') && level >= 7) {
+      return { question: 'What is sin(30°)?', correctAnswer: 0.5, hint: 'Use the unit circle or a trig table' };
+    }
+
+    if (topicsArray.includes('Addition') && level >= 1) {
       const a = Math.floor(Math.random() * 10 + 1);
       const b = Math.floor(Math.random() * 10 + 1);
-      return {
-        question: `${a}x + ${b} = ${a * 5 + b}. Solve for x`,
-        correctAnswer: 5,
-        hint: `Think of how to isolate x`
-      };
+      return { question: `${a} + ${b}`, correctAnswer: a + b, hint: `Start at ${a} and count up ${b}` };
     }
 
-    const maxVal = 10 + level * 2 + (gradeNum - 2) * 5;
-    const a = Math.floor(Math.random() * maxVal + 1);
-    const b = Math.floor(Math.random() * maxVal + 1);
-    return {
-      question: `${a} + ${b}`,
-      correctAnswer: a + b,
-      hint: `Try counting on from ${a}`
-    };
-  }
+    return { question: 'What is 2 + 2?', correctAnswer: 4, hint: 'It's more than 3.' };
+  };
 
-  function startQuiz() {
-    const questions = Array.from({ length: 10 }, () => generateProblem(difficultyLevel));
-    setQuizQuestions(questions);
-    setCurrentQuestionIndex(0);
-    setScore(0);
-    setQuizFinished(false);
-    setQuizMode(true);
-    setProblem(questions[0]);
-  }
-
-  function updateBadges(newCorrect) {
-    const allBadges = [];
-    if (newCorrect >= 10 && newCorrect < 50) {
-      const streaks = Math.floor(newCorrect / 10);
-      for (let i = 1; i <= streaks; i++) {
-        allBadges.push(`⭐ ${i * 10}-Streak`);
-      }
-    } else if (newCorrect >= 50 && newCorrect < 200) {
-      const milestones = Math.floor((newCorrect - 50) / 25);
-      for (let i = 0; i <= milestones; i++) {
-        allBadges.push(`🦄 ${50 + i * 25} Correct!`);
-      }
-    } else if (newCorrect >= 200) {
-      const expertLevels = Math.floor((newCorrect - 200) / 50);
-      for (let i = 0; i <= expertLevels; i++) {
-        allBadges.push(`🦄✨ ${200 + i * 50}+ Expert`);
-      }
-    }
-    setBadges(allBadges);
-  }
-
-  function handleSubmitAnswer() {
-    const current = quizMode ? quizQuestions[currentQuestionIndex] : problem;
-    if (parseFloat(answer) === current.correctAnswer) {
+  const handleSubmit = () => {
+    if (!problem) return;
+    const isCorrect = parseFloat(answer) === problem.correctAnswer;
+    if (isCorrect) {
       const newCorrect = correctCount + 1;
       setCorrectCount(newCorrect);
       setIncorrectCount(0);
+      setFeedback('✅ Correct!');
+      setDifficultyLevel(prev => Math.min(prev + 1, getDifficultyCap(selectedGrade)));
       updateBadges(newCorrect);
-      setFeedback("Correct!");
-      setDifficultyLevel(prev => Math.min(prev + 1, 10));
-      setAnswer("");
-      if (quizMode) setScore(score + 1);
     } else {
       setIncorrectCount(prev => prev + 1);
       setCorrectCount(0);
-      setFeedback("Try again!");
+      setFeedback('❌ Incorrect');
       setDifficultyLevel(1);
     }
+    setAnswer('');
+    setTimeout(() => {
+      setProblem(generateProblem());
+      setFeedback('');
+    }, 1000);
+  };
 
-    if (quizMode) {
-      setTimeout(() => {
-        if (currentQuestionIndex < quizQuestions.length - 1) {
-          const nextIndex = currentQuestionIndex + 1;
-          setCurrentQuestionIndex(nextIndex);
-          setProblem(quizQuestions[nextIndex]);
-          setAnswer("");
-          setFeedback("");
-        } else {
-          setQuizFinished(true);
-          setQuizMode(false);
-        }
-      }, 1000);
+  const updateBadges = (count) => {
+    const newBadges = [];
+    if (count >= 10 && count < 50) {
+      const streaks = Math.floor(count / 10);
+      for (let i = 1; i <= streaks; i++) {
+        newBadges.push(`⭐ ${i * 10}-Streak`);
+      }
+    } else if (count >= 50 && count < 200) {
+      const milestones = Math.floor((count - 50) / 25);
+      for (let i = 0; i <= milestones; i++) {
+        newBadges.push(`🦄 ${50 + i * 25} Correct!`);
+      }
+    } else if (count >= 200) {
+      const expertLevels = Math.floor((count - 200) / 50);
+      for (let i = 0; i <= expertLevels; i++) {
+        newBadges.push(`🦄✨ ${200 + i * 50}+ Expert`);
+      }
     }
-  }
-
-  function handleGradeChange(newGrade) {
-    setGrade(newGrade);
-    setDifficultyLevel(1);
-    if (!quizMode) {
-      setProblem(generateProblem(1));
-    }
-  }
+    setBadges(newBadges);
+  };
 
   return (
-    <div className="layout compact">
+    <div className={`app-wrapper ${darkMode ? 'dark' : ''}`}>
       <header className="app-header">
-        <h1>Math Game - Test Layout</h1>
-        <div className="user-info">
-          <span>{activeUser.name}</span>
-          <img src={activeUser.avatar} alt="avatar" width={40} />
-        </div>
+        <h1>Math Game</h1>
         <div className="selectors">
-          <select value={grade} onChange={(e) => handleGradeChange(e.target.value)}>
-            <option value="2">2nd Grade</option>
-            <option value="3">3rd Grade</option>
-            <option value="4">4th Grade</option>
-            <option value="5">5th Grade</option>
-            <option value="6">6th Grade</option>
-            <option value="7">7th Grade</option>
-            <option value="8">8th Grade</option>
+          <select value={selectedGrade} onChange={(e) => setSelectedGrade(Number(e.target.value))}>
+            {[2, 3, 4, 5, 6, 7, 8].map(grade => (
+              <option key={grade} value={grade}>Grade {grade}</option>
+            ))}
           </select>
           <select value={theme} onChange={(e) => setTheme(e.target.value)}>
             <option value="/images/space.jpg">Space</option>
             <option value="/images/forest.jpg">Forest</option>
             <option value="/images/beach.jpg">Beach</option>
           </select>
+          <label>
+            <input type="checkbox" checked={darkMode} onChange={() => setDarkMode(!darkMode)} /> Dark Mode
+          </label>
         </div>
       </header>
 
-      <main className="main-content">
-        <section className="game-panel">
-          <div className="game-section">
-            {!quizFinished ? (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, y: -30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.65)",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    textAlign: "center",
-                    margin: "30px auto",
-                    maxWidth: "80%",
-                  }}
+      <main className="topic-selector">
+        {Object.entries(topics).map(([category, topicList]) => (
+          <div className="topic-group" key={category}>
+            <h4>{category}</h4>
+            <div className="toggle-container">
+              {topicList.map(topic => (
+                <button
+                  key={topic}
+                  className={`toggle-btn ${enabledTopics[topic] ? 'active' : ''}`}
+                  onClick={() => handleToggle(topic)}
+                  disabled={!gradeTopicLimits[selectedGrade].includes(topic)}
                 >
-                  <p style={{ fontSize: "3rem", color: "#ffffff" }}>
-                    <strong>Question:</strong> {problem?.question}
-                  </p>
-                </motion.div>
-                <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
-                  <input
-                    type="text"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    placeholder="Enter your answer"
-                    style={{ fontSize: "1.5rem", padding: "10px", width: "200px" }}
-                  />
-                </div>
-                <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "10px" }}>
-                  <button onClick={handleSubmitAnswer}>Submit</button>
-                  <button onClick={() => setShowHint(true)}>Hint</button>
-                  <button onClick={startQuiz}>Skip</button>
-                </div>
-                {showHint && <p className="hint">Hint: {problem?.hint}</p>}
-                <p className="feedback">{feedback}</p>
-                <p style={{ textAlign: "center" }}>
-                  Correct: {correctCount} | Incorrect: {incorrectCount}
-                </p>
-                {badges.length > 0 && (
-                  <div style={{ textAlign: "center", marginTop: "10px" }}>
-                    <strong>Badges:</strong>
-                    <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "5px" }}>
-                      {badges.map((badge, idx) => (
-                        <span key={idx} style={{ padding: "5px 10px", backgroundColor: "#ffe0f0", borderRadius: "12px", fontWeight: "bold" }}>{badge}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="final-score">You scored {score} out of 10!</p>
-            )}
+                  {topic}
+                </button>
+              ))}
+            </div>
           </div>
-        </section>
+        ))}
 
-        <section className="analytics-section" style={{ width: "33%" }}>
-          <h2>Test Graph</h2>
+        {problem && (
+          <motion.div
+            className="question-block"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', padding: '20px', borderRadius: '12px' }}
+          >
+            <p className="question-text" style={{ color: '#fff', fontSize: '2rem' }}>{problem.question}</p>
+            <input
+              type="text"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Enter your answer"
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            />
+            <button onClick={handleSubmit}>Submit</button>
+            {feedback && <p className="feedback-text">{feedback}</p>}
+            <p>Correct: {correctCount} | Incorrect: {incorrectCount}</p>
+            <div className="badges-container">
+              {badges.map((b, i) => <span key={i} className="badge-item">{b}</span>)}
+            </div>
+          </motion.div>
+        )}
+
+        <section className="analytics-section">
+          <h2>Performance</h2>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart
-              data={[{ name: "Q1", score: 7 }, { name: "Q2", score: 9 }]}
+              data={[{ name: 'Q1', score: 7 }, { name: 'Q2', score: 9 }]}
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis domain={[0, 10]} />
               <Tooltip />
-              <Legend onClick={() => setShowLineA(!showLineA)} />
-              {showLineA && (
-                <Line type="monotone" dataKey="score" stroke="#e75480" strokeWidth={4} name="Performance" />
-              )}
+              <Legend />
+              <Line type="monotone" dataKey="score" stroke="#e75480" strokeWidth={4} name="Performance" />
             </LineChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", marginTop: "10px" }}>
-            <strong>Correct:</strong> {correctCount} <br />
-            <strong>Incorrect:</strong> {incorrectCount}
-          </div>
         </section>
       </main>
     </div>
   );
-}
+};
+
+export default MathGameApp;
