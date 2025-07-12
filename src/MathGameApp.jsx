@@ -122,7 +122,7 @@ const MathGameApp = () => {
       return { question: `${a} + ${b}`, correctAnswer: a + b, hint: `Start at ${a} and count up ${b}`, svg: null };
     }
 
-    return { question: 'What is 2 + 2?', correctAnswer: 4, hint: 'It’s more than 3.', svg: null };
+    return { question: "What is 2 + 2?", correctAnswer: 4, hint: "It’s more than 3.", svg: null };
   };
 
   const handleSubmit = () => {
