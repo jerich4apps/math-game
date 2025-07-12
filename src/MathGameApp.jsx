@@ -79,11 +79,101 @@ const MathGameApp = () => {
   };
 
   const generateProblem = () => {
-    const level = difficultyLevel;
-    const grade = selectedGrade;
-    const topicsArray = Object.keys(enabledTopics).filter(t => enabledTopics[t]);
-    // Problem generation logic omitted for brevity
-    return { question: "What is 2 + 2?", correctAnswer: 4, hint: "It’s more than 3.", svg: null };
+    const allEnabled = Object.entries(enabledTopics).filter(([k, v]) => v).map(([k]) => k);
+    const pick = allEnabled[Math.floor(Math.random() * allEnabled.length)];
+    let q = '', a = 0, hint = '', svg = null;
+
+    const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    switch (pick) {
+      case 'Addition': {
+        const x = random(1, 50), y = random(1, 50);
+        q = `What is ${x} + ${y}?`;
+        a = x + y;
+        hint = 'Add the two numbers.';
+        break;
+      }
+      case 'Subtraction': {
+        const x = random(10, 99), y = random(1, x);
+        q = `What is ${x} - ${y}?`;
+        a = x - y;
+        hint = 'Subtract the second number from the first.';
+        break;
+      }
+      case 'Multiplication': {
+        const x = random(2, 12), y = random(2, 12);
+        q = `What is ${x} × ${y}?`;
+        a = x * y;
+        hint = 'Multiply the numbers.';
+        break;
+      }
+      case 'Division': {
+        const y = random(2, 12), aTemp = random(2, 12);
+        const x = y * aTemp;
+        q = `What is ${x} ÷ ${y}?`;
+        a = aTemp;
+        hint = 'Divide the first number by the second.';
+        break;
+      }
+      case 'Sine': {
+        q = 'What is sin(90°)?';
+        a = 1;
+        hint = 'Think about the unit circle.';
+        svg = <SineWaveSVG />;
+        break;
+      }
+      case 'Cosine': {
+        q = 'What is cos(0°)?';
+        a = 1;
+        hint = 'Think about the unit circle.';
+        svg = <CosineWaveSVG />;
+        break;
+      }
+      case 'Tangent': {
+        q = 'What is tan(45°)?';
+        a = 1;
+        hint = 'Opposite over adjacent.';
+        svg = <TangentWaveSVG />;
+        break;
+      }
+      case 'Shapes': {
+        q = 'Identify this shape.';
+        a = 'triangle';
+        hint = 'It has three sides.';
+        svg = <TriangleSVG />;
+        break;
+      }
+      case 'Angles': {
+        q = 'How many degrees in a right angle?';
+        a = 90;
+        hint = 'It forms an L shape.';
+        svg = <AngleSVG />;
+        break;
+      }
+    }
+    return { question: q, correctAnswer: a, hint, svg };
+  };
+
+  const checkAnswer = () => {
+    if (!problem) return;
+    const isCorrect = String(answer).trim().toLowerCase() === String(problem.correctAnswer).toLowerCase();
+    if (isCorrect) {
+      const newCorrect = correctCount + 1;
+      setCorrectCount(newCorrect);
+      const newLevel = Math.min(difficultyLevel + 1, getDifficultyCap(selectedGrade));
+      setDifficultyLevel(newLevel);
+      if (newCorrect % 5 === 0) setBadges(prev => [...prev, '⭐']);
+      setFeedback('Correct!');
+      setAnswer('');
+    } else {
+      const newIncorrect = incorrectCount + 1;
+      setIncorrectCount(newIncorrect);
+      setDifficultyLevel(1);
+      setFeedback(`Incorrect. Hint: ${problem.hint}`);
+    }
+    setProblem(generateProblem());
+    localStorage.setItem('correctCount', correctCount);
+    localStorage.setItem('incorrectCount', incorrectCount);
+    localStorage.setItem('badges', JSON.stringify(badges));
   };
 
   return (
