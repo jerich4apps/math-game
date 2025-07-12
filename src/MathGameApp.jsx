@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { motion } from 'framer-motion';
+import TriangleSVG from './svgs/TriangleSVG';
+import SineWaveSVG from './svgs/SineWaveSVG';
+import CosineWaveSVG from './svgs/CosineWaveSVG';
+import TangentWaveSVG from './svgs/TangentWaveSVG';
+import CircleSVG from './svgs/CircleSVG';
+import AngleSVG from './svgs/AngleSVG';
+import SquareSVG from './svgs/SquareSVG';
 
 const topics = {
   Arithmetic: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
@@ -29,16 +36,22 @@ const getDifficultyCap = (grade) => {
 };
 
 const MathGameApp = () => {
-  const [selectedGrade, setSelectedGrade] = useState(2);
-  const [enabledTopics, setEnabledTopics] = useState({});
+  const [selectedGrade, setSelectedGrade] = useState(() => {
+    const savedGrade = localStorage.getItem('selectedGrade');
+    return savedGrade ? Number(savedGrade) : 2;
+  });
+  const [enabledTopics, setEnabledTopics] = useState(() => {
+    const savedTopics = localStorage.getItem('enabledTopics');
+    return savedTopics ? JSON.parse(savedTopics) : {};
+  });
   const [theme, setTheme] = useState('/images/forest.jpg');
   const [problem, setProblem] = useState(null);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [correctCount, setCorrectCount] = useState(0);
-  const [incorrectCount, setIncorrectCount] = useState(0);
+  const [correctCount, setCorrectCount] = useState(() => Number(localStorage.getItem('correctCount')) || 0);
+  const [incorrectCount, setIncorrectCount] = useState(() => Number(localStorage.getItem('incorrectCount')) || 0);
   const [difficultyLevel, setDifficultyLevel] = useState(1);
-  const [badges, setBadges] = useState([]);
+  const [badges, setBadges] = useState(() => JSON.parse(localStorage.getItem('badges')) || []);
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -58,10 +71,12 @@ const MathGameApp = () => {
     setDifficultyLevel(1);
     setCorrectCount(0);
     setIncorrectCount(0);
+    localStorage.setItem('selectedGrade', selectedGrade);
   }, [selectedGrade]);
 
   useEffect(() => {
     setProblem(generateProblem());
+    localStorage.setItem('enabledTopics', JSON.stringify(enabledTopics));
   }, [enabledTopics]);
 
   const handleToggle = (topic) => {
@@ -78,20 +93,36 @@ const MathGameApp = () => {
       const a = Math.floor(Math.random() * 10 + 1);
       const x = Math.floor(Math.random() * 10);
       const b = Math.floor(Math.random() * 10);
-      return { question: `${a}x + ${b} = ${a * x + b}. Solve for x`, correctAnswer: x, hint: 'Isolate x by undoing operations' };
+      return { question: `${a}x + ${b} = ${a * x + b}. Solve for x`, correctAnswer: x, hint: 'Isolate x by undoing operations', svg: null };
     }
 
     if (topicsArray.includes('Sine') && level >= 7) {
-      return { question: 'What is sin(30°)?', correctAnswer: 0.5, hint: 'Use the unit circle or a trig table' };
+      return { question: 'What is sin(30°)?', correctAnswer: 0.5, hint: 'Use the unit circle or a trig table', svg: <SineWaveSVG /> };
+    }
+
+    if (topicsArray.includes('Cosine') && level >= 7) {
+      return { question: 'What is cos(0°)?', correctAnswer: 1, hint: 'Look at the cosine on the unit circle', svg: <CosineWaveSVG /> };
+    }
+
+    if (topicsArray.includes('Tangent') && level >= 7) {
+      return { question: 'What is tan(45°)?', correctAnswer: 1, hint: 'Opposite over adjacent in a right triangle', svg: <TangentWaveSVG /> };
+    }
+
+    if (topicsArray.includes('Shapes') && level >= 4) {
+      return { question: 'What is the sum of angles in a triangle?', correctAnswer: 180, hint: 'It’s always the same for any triangle', svg: <TriangleSVG /> };
+    }
+
+    if (topicsArray.includes('Angles') && level >= 4) {
+      return { question: 'How many degrees in a right angle?', correctAnswer: 90, hint: 'A quarter turn', svg: <AngleSVG /> };
     }
 
     if (topicsArray.includes('Addition') && level >= 1) {
       const a = Math.floor(Math.random() * 10 + 1);
       const b = Math.floor(Math.random() * 10 + 1);
-      return { question: `${a} + ${b}`, correctAnswer: a + b, hint: `Start at ${a} and count up ${b}` };
+      return { question: `${a} + ${b}`, correctAnswer: a + b, hint: `Start at ${a} and count up ${b}`, svg: null };
     }
 
-    return { question: 'What is 2 + 2?', correctAnswer: 4, hint: 'It's more than 3.' };
+    return { question: 'What is 2 + 2?', correctAnswer: 4, hint: 'It’s more than 3.', svg: null };
   };
 
   const handleSubmit = () => {
@@ -112,8 +143,12 @@ const MathGameApp = () => {
     }
     setAnswer('');
     setTimeout(() => {
-      setProblem(generateProblem());
+      const newProblem = generateProblem();
+      setProblem(newProblem);
       setFeedback('');
+      localStorage.setItem('correctCount', correctCount);
+      localStorage.setItem('incorrectCount', incorrectCount);
+      localStorage.setItem('badges', JSON.stringify(badges));
     }, 1000);
   };
 
@@ -187,6 +222,7 @@ const MathGameApp = () => {
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', padding: '20px', borderRadius: '12px' }}
           >
             <p className="question-text" style={{ color: '#fff', fontSize: '2rem' }}>{problem.question}</p>
+            {problem.svg && <div className="visual-aid">{problem.svg}</div>}
             <input
               type="text"
               value={answer}
