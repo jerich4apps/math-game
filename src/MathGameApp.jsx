@@ -75,11 +75,16 @@ const MathGameApp = () => {
 
   const handleToggle = (topic) => {
     if (!gradeTopicLimits[selectedGrade].includes(topic)) return;
-    setEnabledTopics(prev => ({ ...prev, [topic]: !prev[topic] }));
+    setEnabledTopics(prev => {
+      const updated = { ...prev, [topic]: !prev[topic] };
+      localStorage.setItem('enabledTopics', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const generateProblem = () => {
     const allEnabled = Object.entries(enabledTopics).filter(([k, v]) => v).map(([k]) => k);
+    if (allEnabled.length === 0) return { question: 'Enable topics to start!', correctAnswer: '', hint: '', svg: null };
     const pick = allEnabled[Math.floor(Math.random() * allEnabled.length)];
     let q = '', a = 0, hint = '', svg = null;
 
@@ -149,6 +154,12 @@ const MathGameApp = () => {
         svg = <AngleSVG />;
         break;
       }
+      default: {
+        q = 'What is 2 + 2?';
+        a = 4;
+        hint = 'It's more than 3.';
+        break;
+      }
     }
     return { question: q, correctAnswer: a, hint, svg };
   };
@@ -158,8 +169,8 @@ const MathGameApp = () => {
     const isCorrect = String(answer).trim().toLowerCase() === String(problem.correctAnswer).toLowerCase();
     if (isCorrect) {
       const newCorrect = correctCount + 1;
-      setCorrectCount(newCorrect);
       const newLevel = Math.min(difficultyLevel + 1, getDifficultyCap(selectedGrade));
+      setCorrectCount(newCorrect);
       setDifficultyLevel(newLevel);
       if (newCorrect % 5 === 0) setBadges(prev => [...prev, '⭐']);
       setFeedback('Correct!');
@@ -181,6 +192,11 @@ const MathGameApp = () => {
       <div className="left-panel">
         <select value={selectedGrade} onChange={(e) => setSelectedGrade(Number(e.target.value))}>
           {[2,3,4,5,6,7,8].map(grade => <option key={grade} value={grade}>Grade {grade}</option>)}
+        </select>
+        <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+          <option value="/images/forest.jpg">Forest</option>
+          <option value="/images/space.jpg">Space</option>
+          <option value="/images/beach.jpg">Beach</option>
         </select>
         {Object.entries(topics).map(([category, items]) => (
           <div key={category} className="topic-group">
