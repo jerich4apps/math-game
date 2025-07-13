@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { motion } from 'framer-motion';
 import TriangleSVG from './svgs/TriangleSVG';
 import SineWaveSVG from './svgs/SineWaveSVG';
 import CosineWaveSVG from './svgs/CosineWaveSVG';
 import TangentWaveSVG from './svgs/TangentWaveSVG';
-import CircleSVG from './svgs/CircleSVG';
 import AngleSVG from './svgs/AngleSVG';
-import SquareSVG from './svgs/SquareSVG';
 
 const topics = {
   Arithmetic: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
@@ -19,13 +17,13 @@ const topics = {
 };
 
 const gradeTopicLimits = {
-  2: ['Addition'],
-  3: ['Addition', 'Subtraction', 'Multiplication'],
-  4: ['Addition', 'Subtraction', 'Multiplication'],
-  5: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions'],
-  6: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry'],
-  7: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry'],
-  8: ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry']
+  2: ['Arithmetic'],
+  3: ['Arithmetic'],
+  4: ['Arithmetic', 'Fractions'],
+  5: ['Arithmetic', 'Fractions'],
+  6: ['Arithmetic', 'Fractions', 'Geometry'],
+  7: ['Arithmetic', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry'],
+  8: ['Arithmetic', 'Fractions', 'Geometry', 'Algebra', 'Trigonometry']
 };
 
 const getDifficultyCap = (grade) => {
@@ -56,10 +54,13 @@ const MathGameApp = () => {
   }, [theme]);
 
   useEffect(() => {
-    const allowedTopics = gradeTopicLimits[selectedGrade];
+    const allowedMainTopics = gradeTopicLimits[selectedGrade];
     const newState = {};
-    Object.values(topics).flat().forEach(topic => {
-      newState[topic] = allowedTopics.includes(topic);
+    Object.entries(topics).forEach(([mainTopic, subtopics]) => {
+      const isMainTopicAllowed = allowedMainTopics.includes(mainTopic);
+      subtopics.forEach(subtopic => {
+        newState[subtopic] = isMainTopicAllowed;
+      });
     });
     setEnabledTopics(newState);
     setDifficultyLevel(1);
@@ -69,25 +70,21 @@ const MathGameApp = () => {
   }, [selectedGrade]);
 
   useEffect(() => {
-    setProblem(generateProblem());
     localStorage.setItem('enabledTopics', JSON.stringify(enabledTopics));
+    setProblem(generateProblem(enabledTopics));
   }, [enabledTopics]);
 
   const handleToggle = (topic) => {
-    if (!gradeTopicLimits[selectedGrade].includes(topic)) return;
-    setEnabledTopics(prev => {
-      const updated = { ...prev, [topic]: !prev[topic] };
-      localStorage.setItem('enabledTopics', JSON.stringify(updated));
-      return updated;
-    });
+    const updated = { ...enabledTopics, [topic]: !enabledTopics[topic] };
+    const hasEnabled = Object.values(updated).some(v => v);
+    if (!hasEnabled) return;
+    setEnabledTopics(updated);
+    localStorage.setItem('enabledTopics', JSON.stringify(updated));
+    setProblem(generateProblem(updated));
   };
 
-  const generateProblem = () => {
-    const allEnabled = Object.entries(enabledTopics).filter(([k, v]) => v).map(([k]) => k);
-    if (allEnabled.length === 0) return { question: 'Enable topics to start!', correctAnswer: '', hint: '', svg: null };
-    const pick = allEnabled[Math.floor(Math.random() * allEnabled.length)];
+  const generateSingleProblem = (pick) => {
     let q = '', a = 0, hint = '', svg = null;
-
     const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     switch (pick) {
       case 'Addition': {
@@ -154,14 +151,24 @@ const MathGameApp = () => {
         svg = <AngleSVG />;
         break;
       }
-      default: {
-        q = 'What is 2 + 2?';
-        a = 4;
-        hint = "It's more than 3.";
-        break;
-      }
+      default:
+        return null;
     }
     return { question: q, correctAnswer: a, hint, svg };
+  };
+
+  const generateProblem = (topicState) => {
+    const allEnabled = Object.entries(topicState).filter(([_, v]) => v).map(([k]) => k);
+    if (allEnabled.length === 0) return { question: 'Enable topics to start!', correctAnswer: '', hint: '', svg: null };
+
+    let problem = null;
+    let tries = 0;
+    while (!problem && tries < 10) {
+      const pick = allEnabled[Math.floor(Math.random() * allEnabled.length)];
+      problem = generateSingleProblem(pick);
+      tries++;
+    }
+    return problem || { question: 'No valid problems available.', correctAnswer: '', hint: '', svg: null };
   };
 
   const checkAnswer = () => {
@@ -170,22 +177,32 @@ const MathGameApp = () => {
     if (isCorrect) {
       const newCorrect = correctCount + 1;
       const newLevel = Math.min(difficultyLevel + 1, getDifficultyCap(selectedGrade));
+      const newBadges = newCorrect % 5 === 0 ? [...badges, '⭐'] : badges;
       setCorrectCount(newCorrect);
       setDifficultyLevel(newLevel);
-      if (newCorrect % 5 === 0) setBadges(prev => [...prev, '⭐']);
+      setBadges(newBadges);
       setFeedback('Correct!');
       setAnswer('');
+      localStorage.setItem('badges', JSON.stringify(newBadges));
     } else {
       const newIncorrect = incorrectCount + 1;
       setIncorrectCount(newIncorrect);
       setDifficultyLevel(1);
       setFeedback(`Incorrect. Hint: ${problem.hint}`);
     }
-    setProblem(generateProblem());
-    localStorage.setItem('correctCount', correctCount);
-    localStorage.setItem('incorrectCount', incorrectCount);
-    localStorage.setItem('badges', JSON.stringify(badges));
+    const next = generateProblem(enabledTopics);
+    setProblem(next);
+    localStorage.setItem('correctCount', correctCount + (isCorrect ? 1 : 0));
+    localStorage.setItem('incorrectCount', incorrectCount + (isCorrect ? 0 : 1));
   };
+
+  const chartData = [
+    {
+      topic: 'Arithmetic',
+      total: correctCount + incorrectCount,
+      correct: correctCount
+    }
+  ];
 
   return (
     <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
@@ -197,13 +214,21 @@ const MathGameApp = () => {
           <option value="/images/forest.jpg">Forest</option>
           <option value="/images/space.jpg">Space</option>
           <option value="/images/beach.jpg">Beach</option>
+          <option value="/images/mountains.jpg">Mountains</option>
+          <option value="/images/city.jpg">City</option>
+          <option value="/images/classroom.jpg">Classroom</option>
         </select>
         {Object.entries(topics).map(([category, items]) => (
           <div key={category} className="topic-group">
             <strong>{category}</strong>
             {items.map(topic => (
               <label key={topic} className="topic-toggle">
-                <input type="checkbox" disabled={!gradeTopicLimits[selectedGrade].includes(topic)} checked={enabledTopics[topic]} onChange={() => handleToggle(topic)} />
+                <input
+                  type="checkbox"
+                  checked={enabledTopics[topic] || false}
+                  onChange={() => handleToggle(topic)}
+                  disabled={!gradeTopicLimits[selectedGrade].includes(category)}
+                />
                 {topic}
               </label>
             ))}
@@ -220,16 +245,17 @@ const MathGameApp = () => {
         </motion.div>
       </div>
 
-      <div className="right-panel">
+      <div className="bottom-panel">
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={[{name: 'Correct', value: correctCount}, {name: 'Incorrect', value: incorrectCount}]}> 
+          <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <XAxis type="number" />
+            <YAxis dataKey="topic" type="category" />
             <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={3} />
-          </LineChart>
+            <Bar dataKey="total" fill="red" />
+            <Bar dataKey="correct" fill="green" />
+          </BarChart>
         </ResponsiveContainer>
         <div className="badges">
           {badges.map((badge, index) => <div key={index} className="badge">{badge}</div>)}
