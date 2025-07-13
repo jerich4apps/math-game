@@ -157,7 +157,7 @@ const MathGameApp = () => {
       default: {
         q = 'What is 2 + 2?';
         a = 4;
-        hint = 'It's more than 3.';
+        hint = "It's more than 3.";
         break;
       }
     }
